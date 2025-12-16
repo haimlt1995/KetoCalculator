@@ -5,9 +5,8 @@ from app.models import ActivityLevel
 
 
 def test_tdee_known_value():
-    # Example: BMR 1878.75 * 1.55 (moderate) = 2912.0625
-    tdee = calculate_tdee(bmr=1878.75, activity_level=ActivityLevel.moderate)
-    assert tdee == pytest.approx(2912.0625, abs=1e-6)
+    tdee = calculate_tdee(bmr=1805.0, activity_level=ActivityLevel.moderate)
+    assert tdee == pytest.approx(2797.75, abs=1e-9)
 
 
 def test_tdee_rejects_non_positive_bmr():
