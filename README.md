@@ -1,171 +1,101 @@
-🥑 Keto Calculator
+# Keto Calculator
 
-A full-stack Keto nutrition calculator that estimates calories, macros, and weight change projections based on user inputs.
+Full-stack keto nutrition calculator that estimates calories, macros, and weight change projections from your inputs.
 
-Built as a learning project with:
+## Stack
+- FastAPI + Python 3.12 (uv managed)
+- React + Vite
+- Docker + Docker Compose
+- Pytest + Ruff
 
-Modern Python backend (FastAPI, uv)
+## Features
+- Metric and imperial inputs (normalized internally)
+- BMI, BMR (Mifflin-St Jeor), and TDEE with activity multipliers
+- Approximate body fat % and FFMI
+- Goal-based calorie adjustment (lose ~20%, maintain, gain +20%)
+- Keto macros (protein, fat, net carbs)
+- Weekly weight forecast chart
 
-Scientific formulas
+## Scientific Basis (high level)
+- BMI — WHO definition
+- BMR — Mifflin-St Jeor equation
+- TDEE — standard activity multipliers
+- Weight change — ~7700 kcal per kg
+- Body fat % (estimate) — BMI-based approximation
+- FFMI — fat-free mass normalized by height
 
-Dockerized API
-
-React + Vite frontend
-
-Clean architecture and tests
-
-⚠️ This project is for educational purposes only.
-Results are estimates and not medical advice.
-
-✨ Features (current)
-
-Metric & imperial input support
-
-BMI, BMR, TDEE calculations
-
-Approximate body fat percentage & FFMI
-
-Keto macros (protein, fat, net carbs)
-
-Goal-based calorie adjustment:
-
-Lose: −20%
-
-Maintain: 0%
-
-Gain: +20%
-
-Weekly weight forecast chart
-
-Clean UI with real-time API calls
-
-🧠 Scientific basis (high level)
-
-Formulas are based on commonly accepted models, including:
-
-BMI – WHO definition
-
-BMR – Mifflin–St Jeor equation
-
-TDEE – activity multipliers
-
-Weight change – ~7700 kcal per kg
-
-Body fat % (estimate) – BMI-based approximation
-
-FFMI – fat-free mass normalized by height
-
-Detailed references will be added in a future update.
-
-🏗️ Project structure
+## Project Structure
+```
 KetoCalculator/
-├── backend/
-│   ├── app/
-│   │   ├── formulas/        # All calculation logic
-│   │   ├── units.py         # Metric / imperial normalization
-│   │   ├── calc.py          # Main calculation orchestrator
-│   │   └── main.py          # FastAPI entry point
-│   ├── tests/               # Pytest test suite
-│   ├── Dockerfile
-│   ├── pyproject.toml
-│   └── README.md
-│
-├── frontend/
-│   ├── src/                 # React components
-│   ├── vite.config.js       # Dev proxy to backend
-│   ├── package.json
-│   └── README.md
-│
-├── docker-compose.yml
-└── README.md
+├─ backend/
+│  ├─ app/
+│  │  ├─ formulas/        # Calculation logic
+│  │  ├─ units.py         # Metric / imperial normalization
+│  │  ├─ calc.py          # Main calculation orchestrator
+│  │  └─ main.py          # FastAPI entry point
+│  ├─ tests/              # Pytest suite
+│  ├─ Dockerfile
+│  └─ pyproject.toml
+├─ frontend/
+│  ├─ src/                # React components
+│  ├─ vite.config.js      # Dev proxy to backend
+│  └─ package.json
+├─ docker-compose.yml
+└─ README.md
+```
 
-🚀 Running locally (recommended for development)
-1️⃣ Backend (with uv)
-
-Requirements
-
-Python 3.12
-
-uv installed
-
+## Running Locally (recommended)
+### Backend (FastAPI with uv)
+Requirements: Python 3.12, `uv` installed.
+```bash
 cd backend
 uv sync
 uv run uvicorn app.main:app --reload
+```
+Backend available at http://localhost:8000 (Swagger UI at `/docs`).
 
-
-Backend will be available at:
-
-http://localhost:8000
-
-Swagger UI: http://localhost:8000/docs
-
-2️⃣ Frontend (Vite + React)
-
-Requirements
-
-Node.js (LTS recommended)
-
-npm
-
+### Frontend (Vite + React)
+Requirements: Node.js (LTS), npm.
+```bash
 cd frontend
 npm install
 npm run dev -- --host
+```
+Frontend available at http://localhost:5173 (proxies API calls to the backend).
 
-
-Frontend will be available at:
-
-http://localhost:5173
-
-The frontend automatically proxies API calls to the backend.
-
-🐳 Running with Docker (backend)
-Build and run API
+## Running with Docker (backend)
+Build and run the API:
+```bash
 docker build -t keto-api ./backend
 docker run --rm -p 8000:8000 keto-api
-
-
+```
 Or with Docker Compose (recommended):
-
+```bash
 docker compose up --build
+```
 
-🔐 Environment variables
-
-Some features (planned) require API keys.
-
-Create a local .env file (not committed):
-
+## Environment Variables
+Create a `.env` (not committed) for keys as needed, for example:
+```
 GOOGLE_API_KEY=your_key_here
+```
+Docker Compose automatically loads it.
 
-
-Docker Compose will automatically load it.
-
-🧪 Tests & code quality
-
-From backend/:
-
+## Tests & Code Quality
+From `backend/`:
+```bash
 uv run pytest
 uv run ruff format .
 uv run ruff check .
-
-
+```
 All calculation logic is unit-tested.
 
-🛣️ Roadmap (planned)
+## Roadmap (planned)
+- LLM-generated keto meal plans
+- Scientific references section
+- Metric + imperial output toggle
+- Mobile-responsive UI improvements
+- Cloud deployment (AWS free tier)
 
-LLM-generated keto meal plans
-
-Scientific references section
-
-Metric ↔ imperial output toggle
-
-Mobile-responsive UI
-
-Cloud deployment (AWS free tier)
-
-📌 Disclaimer
-
-This project provides estimates only and is not a substitute for professional medical or nutritional advice.
-
-👤 Author
-
-Built as part of an academic learning project using modern backend & frontend tooling.
+## Disclaimer
+Results are estimates for educational purposes and not medical or nutritional advice. Consult a professional for personalized guidance.
