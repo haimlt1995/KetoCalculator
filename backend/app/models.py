@@ -14,6 +14,12 @@ class Sex(str, Enum):
     female = "female"
 
 
+class Goal(str, Enum):
+    lose = "lose"
+    maintain = "maintain"
+    gain = "gain"
+
+
 class ActivityLevel(str, Enum):
     sedentary = "sedentary"
     light = "light"
@@ -22,10 +28,23 @@ class ActivityLevel(str, Enum):
     athlete = "athlete"
 
 
+class Macros(BaseModel):
+    calories_total: float
+    protein_g: float
+    fat_g: float
+    net_carbs_g: float
+
+
+class ForecastPoint(BaseModel):
+    week: int
+    weight_kg: float
+
+
 class UserInput(BaseModel):
     unit_system: UnitSystem = UnitSystem.metric
     sex: Sex
     age_years: int = Field(ge=10, le=100)
+    goal: Goal = Goal.maintain
 
     # Metric
     height_cm: float | None = Field(default=None, gt=0)
@@ -42,22 +61,11 @@ class UserInput(BaseModel):
     protein_g_per_kg: float = Field(default=1.8, ge=0.5, le=4.0)
 
 
-class Goal(str, Enum):
-    lose = "lose"
-    maintain = "maintain"
-    gain = "gain"
-
-
-class Macros(BaseModel):
-    calories_total: float
-    protein_g: float
-    fat_g: float
-    net_carbs_g: float
-
-
 class CalcOutput(BaseModel):
     bmi: float
     bmr: float
     tdee: float
     body_fat_percent_estimate: float | None
+    ffmi: float | None
     macros: Macros
+    forecast: list[ForecastPoint]
