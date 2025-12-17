@@ -70,6 +70,9 @@ function Card({ title, subtitle, children }) {
 
 const inputStyle = {
   width: "100%",
+  boxSizing: "border-box",
+  display: "block",
+  height: 44,
   padding: "12px 14px",
   borderRadius: 12,
   border: `1px solid ${colors.border}`,
