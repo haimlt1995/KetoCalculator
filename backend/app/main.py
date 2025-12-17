@@ -27,5 +27,17 @@ def mealplan(user: UserInput) -> MealPlanResponse:
     try:
         calc = calculate_all(user)
         return generate_meal_plan(user, calc)
+
     except ValueError as e:
+        # Input / validation errors
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+    except RuntimeError as e:
+        msg = str(e)
+
+        # Quota / rate-limit from Gemini
+        if "RESOURCE_EXHAUSTED" in msg or "RATE_LIMIT" in msg:
+            raise HTTPException(status_code=429, detail=msg) from e
+
+        # Temporary overload / retry later
+        raise HTTPException(status_code=503, detail=msg) from e
