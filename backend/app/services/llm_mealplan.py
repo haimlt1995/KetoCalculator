@@ -42,6 +42,28 @@ SCHEMA_EXAMPLE = """
 """.strip()
 
 
+# mealplan prompt helpers
+def _mealplan_pref_lines(user: UserInput) -> list[str]:
+    mp = user.mealplan
+    lines: list[str] = [
+        f"- Number of days: {mp.days}. Output exactly this many day entries.",
+        f"- Meals per day: {mp.meals_per_day} ({'OMAD' if mp.meals_per_day == 1 else 'standard'})",
+        "- Each day MUST contain exactly `meals_per_day` meals.",
+        "- Use these meal_name values:",
+    ]
+
+    if mp.meals_per_day == 1:
+        lines.append('  - "meal"')
+    else:
+        # Simple consistent naming, still flexible
+        # (If 2 meals: lunch+dinner; 3: breakfast+lunch+dinner; 4+: add snacks)
+        base = ['"breakfast"', '"lunch"', '"dinner"', '"snack"', '"snack2"', '"snack3"']
+        lines.append("  - " + ", ".join(base[: mp.meals_per_day]))
+
+    return lines
+
+
+# dietary preference helpers
 def _dietary_lines(user: UserInput) -> list[str]:
     prefs = user.dietary
 
@@ -65,6 +87,7 @@ def _dietary_lines(user: UserInput) -> list[str]:
 
 def build_prompt(user: UserInput, calc: CalcOutput) -> str:
     dietary_rules = _dietary_lines(user)
+    mealplan_rules = _mealplan_pref_lines(user)
 
     return "\n".join(
         [
@@ -75,6 +98,7 @@ def build_prompt(user: UserInput, calc: CalcOutput) -> str:
             f"- Protein target: {calc.macros.protein_g:.0f}g/day",
             f"- Fat target: {calc.macros.fat_g:.0f}g/day",
             f"- Calories target: {calc.macros.calories_total:.0f} kcal/day",
+            *mealplan_rules,
             "- Output MUST be valid JSON that matches this schema exactly:",
             SCHEMA_EXAMPLE,
             "",

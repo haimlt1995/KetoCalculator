@@ -47,6 +47,13 @@ class DietaryPreferences(BaseModel):
     vegetarian: bool = False
 
 
+class MealPlanPreferences(BaseModel):
+    # 1 = OMAD, 2-6 = meals/day
+    meals_per_day: int = Field(default=3, ge=1, le=6)
+    # 1-7 days
+    days: int = Field(default=1, ge=1, le=7)
+
+
 class UserInput(BaseModel):
     unit_system: UnitSystem = UnitSystem.metric
     sex: Sex
@@ -69,6 +76,9 @@ class UserInput(BaseModel):
 
     # Dietary preferences
     dietary: DietaryPreferences = Field(default_factory=DietaryPreferences)
+
+    # Meal plan preferences
+    mealplan: MealPlanPreferences = Field(default_factory=MealPlanPreferences)
 
 
 class CalcOutput(BaseModel):

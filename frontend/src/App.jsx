@@ -232,6 +232,8 @@ export default function App() {
     vegan: false,
     vegetarian: false,
   });
+  const [mealsPerDay, setMealsPerDay] = useState(3);
+  const [planDays, setPlanDays] = useState(7);
   const [form, setForm] = useState(defaultForm);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
@@ -260,7 +262,14 @@ export default function App() {
       const res = await fetch("/api/calc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, dietary: dietaryRestrictions }),
+        body: JSON.stringify({
+          ...form,
+          dietary: dietaryRestrictions,
+          mealplan: {
+            meals_per_day: mealsPerDay,
+            days: planDays,
+          },
+        }),
       });
 
       const data = await res.json();
@@ -283,7 +292,14 @@ export default function App() {
       const res = await fetch("/api/mealplan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, dietary: dietaryRestrictions }),
+        body: JSON.stringify({
+          ...form,
+          dietary: dietaryRestrictions,
+          mealplan: {
+            meals_per_day: mealsPerDay,
+            days: planDays,
+          },
+        }),
       });
 
       const data = await res.json();
@@ -654,41 +670,75 @@ export default function App() {
             {result ? (
               <Card title="Meal Plan" subtitle="Set restrictions and request a generated plan.">
                 <div style={{ display: "grid", gap: 14, textAlign: "left" }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>
-                      Dietary restrictions
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>
+                        Dietary restrictions
+                      </div>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {[
+                          { key: "kosher", label: "Kosher" },
+                          { key: "halal", label: "Halal" },
+                          { key: "vegan", label: "Vegan" },
+                          { key: "vegetarian", label: "Vegetarian" },
+                        ].map((option) => (
+                          <label
+                            key={option.key}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
+                              fontSize: 14,
+                              color: colors.text,
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={dietaryRestrictions[option.key]}
+                              onChange={() =>
+                                setDietaryRestrictions((prev) => ({
+                                  ...prev,
+                                  [option.key]: !prev[option.key],
+                                }))
+                              }
+                              style={{ width: 16, height: 16 }}
+                            />
+                            {option.label}
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                    <div style={{ display: "grid", gap: 8 }}>
-                      {[
-                        { key: "kosher", label: "Kosher" },
-                        { key: "halal", label: "Halal" },
-                        { key: "vegan", label: "Vegan" },
-                        { key: "vegetarian", label: "Vegetarian" },
-                      ].map((option) => (
-                        <label
-                          key={option.key}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                            fontSize: 14,
-                            color: colors.text,
-                          }}
+
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>Meals/day</div>
+                        <select
+                          value={mealsPerDay}
+                          onChange={(e) => setMealsPerDay(Number(e.target.value))}
+                          style={{ ...inputStyle, height: 44 }}
                         >
-                          <input
-                            type="checkbox"
-                            checked={dietaryRestrictions[option.key]}
-                            onChange={() =>
-                              setDietaryRestrictions((prev) => ({
-                                ...prev,
-                                [option.key]: !prev[option.key],
-                              }))
-                            }
-                            style={{ width: 16, height: 16 }}
-                          />
-                          {option.label}
-                        </label>
-                      ))}
+                          <option value={1}>1 (OMAD)</option>
+                          <option value={2}>2</option>
+                          <option value={3}>3</option>
+                          <option value={4}>4</option>
+                          <option value={5}>5</option>
+                          <option value={6}>6</option>
+                        </select>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>Number of days</div>
+                        <select
+                          value={planDays}
+                          onChange={(e) => setPlanDays(Number(e.target.value))}
+                          style={{ ...inputStyle, height: 44 }}
+                        >
+                          {[1, 2, 3, 4, 5, 6, 7].map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
 
