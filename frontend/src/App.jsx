@@ -68,6 +68,145 @@ function Card({ title, subtitle, children }) {
   );
 }
 
+function Stat({ label, value }) {
+  return (
+    <div
+      style={{
+        border: `1px solid ${colors.border}`,
+        borderRadius: 12,
+        padding: 12,
+        background: "rgba(255,255,255,0.03)",
+      }}
+    >
+      <div style={{ fontSize: 12, color: colors.textMuted }}>{label}</div>
+      <div style={{ fontSize: 20, fontWeight: 900, marginTop: 6, color: colors.text }}>{value}</div>
+    </div>
+  );
+}
+
+function MealPlanContent({ mealPlan, mealPlanError, mealPlanLoading, onRetry }) {
+  if (mealPlanLoading) {
+    return <div style={{ fontSize: 14, color: colors.textMuted }}>Generating meal plan...</div>;
+  }
+
+  if (mealPlanError) {
+    return (
+      <div
+        style={{
+          border: "1px solid rgba(248,113,113,0.3)",
+          background: "rgba(248,113,113,0.08)",
+          padding: 12,
+          borderRadius: 12,
+          color: "#fecdd3",
+          fontSize: 13,
+        }}
+      >
+        <div style={{ fontWeight: 800, marginBottom: 6 }}>LLM is busy right now</div>
+        <div style={{ marginBottom: 10 }}>{mealPlanError}</div>
+        <button
+          onClick={onRetry}
+          style={{
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: "1px solid rgba(248,113,113,0.35)",
+            background: "rgba(248,113,113,0.2)",
+            color: colors.text,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (!mealPlan) {
+    return (
+      <div style={{ fontSize: 13, color: colors.textMuted }}>
+        Adjust restrictions and generate to see a plan.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 14 }}>
+      {mealPlan?.days?.map((day) => (
+        <div
+          key={day.day}
+          style={{
+            border: `1px solid ${colors.border}`,
+            borderRadius: 16,
+            padding: 14,
+            background: "rgba(255,255,255,0.03)",
+          }}
+        >
+          <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 10, color: colors.text }}>
+            Day {day.day}
+          </div>
+
+          <div style={{ display: "grid", gap: 10 }}>
+            {day.meals?.map((meal, idx) => (
+              <div
+                key={`${day.day}-${idx}`}
+                style={{
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: 12,
+                  padding: 10,
+                  background: "rgba(255,255,255,0.04)",
+                }}
+              >
+                <div style={{ fontWeight: 800, marginBottom: 6, color: colors.text }}>
+                  {meal.meal_name}
+                </div>
+
+                <ul style={{ margin: 0, paddingLeft: 18, color: colors.text }}>
+                  {meal.items?.map((item, i) => (
+                    <li key={i}>
+                      {item.name} - {item.grams}g{item.notes ? ` (${item.notes})` : ""}
+                    </li>
+                  ))}
+                </ul>
+
+                <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>
+                  {Math.round(meal.calories)} kcal | P {Math.round(meal.protein_g)}g | F{" "}
+                  {Math.round(meal.fat_g)}g | Net C {Math.round(meal.net_carbs_g)}g
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {day.totals ? (
+            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85 }}>
+              <b>Totals:</b> {Math.round(day.totals.calories)} kcal | P {Math.round(day.totals.protein_g)}g
+              | F {Math.round(day.totals.fat_g)}g | Net C {Math.round(day.totals.net_carbs_g)}g
+            </div>
+          ) : null}
+        </div>
+      ))}
+
+      {mealPlan?.shopping_list?.length ? (
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 8, color: colors.text }}>
+            Shopping list
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18, color: colors.text }}>
+            {mealPlan.shopping_list.map((s, i) => (
+              <li key={i}>{s}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {mealPlan?.assumptions?.length ? (
+        <div style={{ fontSize: 12, opacity: 0.8 }}>
+          <b>Assumptions:</b> {mealPlan.assumptions.join(" | ")}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
@@ -87,6 +226,12 @@ export default function App() {
   const [mealPlan, setMealPlan] = useState(null);
   const [mealPlanError, setMealPlanError] = useState("");
   const [mealPlanLoading, setMealPlanLoading] = useState(false);
+  const [dietaryRestrictions, setDietaryRestrictions] = useState({
+    kosher: false,
+    halal: false,
+    vegan: false,
+    vegetarian: false,
+  });
   const [form, setForm] = useState(defaultForm);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
@@ -94,7 +239,11 @@ export default function App() {
   const [isNarrow, setIsNarrow] = useState(
     typeof window !== "undefined" ? window.innerWidth < 1040 : false
   );
-  const twoCol = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 };
+  const twoCol = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 12,
+  };
 
   function update(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -126,27 +275,27 @@ export default function App() {
   }
 
   async function onGenerateMealPlan() {
-  setMealPlan(null);
-  setMealPlanError("");
-  setMealPlanLoading(true);
+    setMealPlan(null);
+    setMealPlanError("");
+    setMealPlanLoading(true);
 
-  try {
-    const res = await fetch("/api/mealplan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    try {
+      const res = await fetch("/api/mealplan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "Meal plan request failed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Meal plan request failed");
 
-    setMealPlan(data);
-  } catch (e) {
-    setMealPlanError(e?.message || "Unknown error");
-  } finally {
-    setMealPlanLoading(false);
+      setMealPlan(data);
+    } catch (e) {
+      setMealPlanError(e?.message || "Unknown error");
+    } finally {
+      setMealPlanLoading(false);
+    }
   }
-}
 
   const chartData = useMemo(() => {
     return (
@@ -256,7 +405,7 @@ export default function App() {
                   </select>
                 </Field>
 
-                <Field label="Goal" hint="Lose: ~20% deficit · Gain: ~20% surplus">
+                <Field label="Goal" hint="Lose: ~20% deficit / Gain: ~20% surplus">
                   <select
                     style={inputStyle}
                     value={form.goal}
@@ -405,17 +554,13 @@ export default function App() {
                   </div>
                 ) : (
                   <div style={{ display: "grid", gap: 14 }}>
-                    <div
-                      style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}
-                    >
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
                       <Stat label="BMI" value={result.bmi.toFixed(2)} />
                       <Stat label="BMR (kcal)" value={Math.round(result.bmr)} />
                       <Stat label="TDEE (kcal)" value={Math.round(result.tdee)} />
                     </div>
 
-                    <div
-                      style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}
-                    >
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
                       <Stat
                         label="Body fat % (approx)"
                         value={result.body_fat_percent_estimate?.toFixed(1) ?? "n/a"}
@@ -436,76 +581,13 @@ export default function App() {
                     >
                       <div style={{ fontSize: 16, fontWeight: 800 }}>Macros</div>
 
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(4, 1fr)",
-                          gap: 12,
-                        }}
-                      >
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
                         <Stat label="Calories" value={Math.round(result.macros.calories_total)} />
                         <Stat label="Protein (g)" value={Math.round(result.macros.protein_g)} />
                         <Stat label="Fat (g)" value={Math.round(result.macros.fat_g)} />
                         <Stat label="Net carbs (g)" value={Math.round(result.macros.net_carbs_g)} />
                       </div>
                     </div>
-                    <div style={{ marginTop: 14, display: "flex", gap: 10, alignItems: "center" }}>
-  <button
-    onClick={onGenerateMealPlan}
-    disabled={mealPlanLoading}
-    style={{
-      padding: "12px 14px",
-      borderRadius: 12,
-      border: "1px solid rgba(255,255,255,0.18)",
-                  background: loading
-                    ? "linear-gradient(120deg, #0ea5e9, #22d3ee)"
-                    : "linear-gradient(120deg, #22d3ee, #0ea5e9)",
-                  color: "#0b1224",
-      fontSize: 14,
-      fontWeight: 700,
-      cursor: mealPlanLoading ? "not-allowed" : "pointer",
-      opacity: mealPlanLoading ? 0.7 : 1,
-    }}
-  >
-    {mealPlanLoading ? "Generating meal plan..." : "Generate meal plan (LLM)"}
-  </button>
-
-  <span style={{ fontSize: 12, opacity: 0.75 }}>
-    Uses your current macros (may take a few seconds).
-  </span>
-</div>
-
-{mealPlanError ? (
-  <div
-    style={{
-      marginTop: 10,
-      border: "1px solid #fde68a",
-      background: "#f08361ff",
-      padding: 12,
-      borderRadius: 12,
-      color: "#92400e",
-      fontSize: 13,
-    }}
-  >
-    <div style={{ fontWeight: 800, marginBottom: 6 }}>LLM is busy right now</div>
-    <div style={{ marginBottom: 10 }}>{mealPlanError}</div>
-    <button
-      onClick={onGenerateMealPlan}
-      style={{
-        padding: "10px 12px",
-        borderRadius: 10,
-        border: "1px solid #92400e",
-        background: "#92400e",
-        fontWeight: 700,
-        cursor: "pointer",
-      }}
-    >
-      Try again
-    </button>
-  </div>
-) : null}
-
-
                   </div>
                 )}
               </div>
@@ -568,103 +650,85 @@ export default function App() {
                 </div>
               )}
             </Card>
+
+            {result ? (
+              <Card title="Meal Plan" subtitle="Set restrictions and request a generated plan.">
+                <div style={{ display: "grid", gap: 14, textAlign: "left" }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>
+                      Dietary restrictions
+                    </div>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {[
+                        { key: "kosher", label: "Kosher" },
+                        { key: "halal", label: "Halal" },
+                        { key: "vegan", label: "Vegan" },
+                        { key: "vegetarian", label: "Vegetarian" },
+                      ].map((option) => (
+                        <label
+                          key={option.key}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            fontSize: 14,
+                            color: colors.text,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={dietaryRestrictions[option.key]}
+                            onChange={() =>
+                              setDietaryRestrictions((prev) => ({
+                                ...prev,
+                                [option.key]: !prev[option.key],
+                              }))
+                            }
+                            style={{ width: 16, height: 16 }}
+                          />
+                          {option.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <button
+                      onClick={onGenerateMealPlan}
+                      disabled={mealPlanLoading}
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: 12,
+                        border: "1px solid rgba(255,255,255,0.18)",
+                        background: mealPlanLoading
+                          ? "linear-gradient(120deg, #0ea5e9, #22d3ee)"
+                          : "linear-gradient(120deg, #22d3ee, #0ea5e9)",
+                        color: "#0b1224",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        cursor: mealPlanLoading ? "not-allowed" : "pointer",
+                        opacity: mealPlanLoading ? 0.7 : 1,
+                      }}
+                    >
+                      {mealPlanLoading ? "Generating meal plan..." : "Generate meal plan (LLM)"}
+                    </button>
+                    <span style={{ fontSize: 12, opacity: 0.75 }}>
+                      Uses your current macros (may take a few seconds).
+                    </span>
+                  </div>
+
+                  <MealPlanContent
+                    mealPlan={mealPlan}
+                    mealPlanError={mealPlanError}
+                    mealPlanLoading={mealPlanLoading}
+                    onRetry={onGenerateMealPlan}
+                  />
+                </div>
+              </Card>
+            ) : null}
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-function Stat({ label, value }) {
-  return (
-    <div
-      style={{
-        border: `1px solid ${colors.border}`,
-        borderRadius: 12,
-        padding: 12,
-        background: "rgba(255,255,255,0.03)",
-      }}
-    >
-      <div style={{ fontSize: 12, color: colors.textMuted }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 900, marginTop: 6, color: colors.text }}>{value}</div>
-    </div>
-  );
-  {mealPlan ? (
-  <div style={{ marginTop: 16 }}>
-    <Card title="Meal plan" subtitle="Generated by LLM. Check totals and adjust as needed.">
-      <div style={{ display: "grid", gap: 14 }}>
-        {mealPlan.days?.map((day) => (
-          <div
-            key={day.day}
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              padding: 12,
-              background: "white",
-            }}
-          >
-            <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 10 }}>
-              Day {day.day}
-            </div>
-
-            <div style={{ display: "grid", gap: 10 }}>
-              {day.meals?.map((meal, idx) => (
-                <div
-                  key={`${day.day}-${idx}`}
-                  style={{
-                    border: "1px solid #f1f5f9",
-                    borderRadius: 12,
-                    padding: 10,
-                    background: "#f8fafc",
-                  }}
-                >
-                  <div style={{ fontWeight: 800, marginBottom: 6 }}>{meal.meal_name}</div>
-
-                  <ul style={{ margin: 0, paddingLeft: 18 }}>
-                    {meal.items?.map((item, i) => (
-                      <li key={i}>
-                        {item.name} — {item.grams}g{item.notes ? ` (${item.notes})` : ""}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>
-                    {Math.round(meal.calories)} kcal • P {Math.round(meal.protein_g)}g • F{" "}
-                    {Math.round(meal.fat_g)}g • Net C {Math.round(meal.net_carbs_g)}g
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {day.totals ? (
-              <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85 }}>
-                <b>Totals:</b> {Math.round(day.totals.calories)} kcal • P{" "}
-                {Math.round(day.totals.protein_g)}g • F {Math.round(day.totals.fat_g)}g • Net C{" "}
-                {Math.round(day.totals.net_carbs_g)}g
-              </div>
-            ) : null}
-          </div>
-        ))}
-
-        {mealPlan.shopping_list?.length ? (
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 8 }}>Shopping list</div>
-            <ul style={{ margin: 0, paddingLeft: 18 }}>
-              {mealPlan.shopping_list.map((s, i) => (
-                <li key={i}>{s}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        {mealPlan.assumptions?.length ? (
-          <div style={{ fontSize: 12, opacity: 0.8 }}>
-            <b>Assumptions:</b> {mealPlan.assumptions.join(" • ")}
-          </div>
-        ) : null}
-      </div>
-    </Card>
-  </div>
-) : null}
-
 }

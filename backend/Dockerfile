@@ -10,7 +10,7 @@ WORKDIR /app
 RUN pip install --no-cache-dir uv
 
 # Copy project metadata AND source code before syncing
-COPY pyproject.toml uv.lock* README.md /app/
+COPY pyproject.toml uv.lock* /app/
 COPY app /app/app
 
 # Install dependencies (no dev deps)
