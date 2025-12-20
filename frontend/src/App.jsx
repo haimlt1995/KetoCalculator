@@ -233,7 +233,7 @@ export default function App() {
     vegetarian: false,
   });
   const [mealsPerDay, setMealsPerDay] = useState(3);
-  const [planDays, setPlanDays] = useState(7);
+  const [planDays, setPlanDays] = useState(1);
   const [form, setForm] = useState(defaultForm);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
