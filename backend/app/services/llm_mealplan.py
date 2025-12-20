@@ -42,9 +42,29 @@ SCHEMA_EXAMPLE = """
 """.strip()
 
 
+def _dietary_lines(user: UserInput) -> list[str]:
+    prefs = user.dietary
+
+    rules: list[str] = []
+    if prefs.vegan:
+        rules.append("- Must be VEGAN (no meat, fish, eggs, dairy, honey).")
+    elif prefs.vegetarian:
+        rules.append("- Must be VEGETARIAN (no meat or fish).")
+
+    if prefs.kosher:
+        rules.append("- Must be KOSHER (no pork/shellfish; do not mix meat and dairy).")
+
+    if prefs.halal:
+        rules.append("- Must be HALAL (no pork/alcohol; halal meat only if meat is included).")
+
+    if not rules:
+        rules.append("- No special dietary restrictions.")
+
+    return rules
+
+
 def build_prompt(user: UserInput, calc: CalcOutput) -> str:
-    # user isn't used yet, but keep it for future personalization (preferences/allergies/etc.)
-    _ = user
+    dietary_rules = _dietary_lines(user)
 
     return "\n".join(
         [
@@ -63,6 +83,7 @@ def build_prompt(user: UserInput, calc: CalcOutput) -> str:
             "- Avoid alcohol.",
             "- Keep it simple and repeatable.",
             "- If user is imperial, you can still output grams (preferred).",
+            *dietary_rules,
             "- Return JSON only. No markdown, no extra text.",
         ]
     )

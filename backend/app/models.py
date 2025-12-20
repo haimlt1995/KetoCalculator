@@ -40,6 +40,13 @@ class ForecastPoint(BaseModel):
     weight_kg: float
 
 
+class DietaryPreferences(BaseModel):
+    kosher: bool = False
+    halal: bool = False
+    vegan: bool = False
+    vegetarian: bool = False
+
+
 class UserInput(BaseModel):
     unit_system: UnitSystem = UnitSystem.metric
     sex: Sex
@@ -59,6 +66,9 @@ class UserInput(BaseModel):
     # Keto config
     net_carbs_g: float = Field(default=25, ge=0, le=100)
     protein_g_per_kg: float = Field(default=1.8, ge=0.5, le=4.0)
+
+    # Dietary preferences
+    dietary: DietaryPreferences = Field(default_factory=DietaryPreferences)
 
 
 class CalcOutput(BaseModel):

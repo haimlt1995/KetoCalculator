@@ -260,7 +260,7 @@ export default function App() {
       const res = await fetch("/api/calc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, dietary: dietaryRestrictions }),
       });
 
       const data = await res.json();
@@ -283,7 +283,7 @@ export default function App() {
       const res = await fetch("/api/mealplan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, dietary: dietaryRestrictions }),
       });
 
       const data = await res.json();
