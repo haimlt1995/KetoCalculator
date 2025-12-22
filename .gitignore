@@ -51,3 +51,8 @@ awscliv2.zip
 frontend/aws/
 frontend/awscliv2.zip
 
+
+# ignore temp files
+reading
+starting
+=
