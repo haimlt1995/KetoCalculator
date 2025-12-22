@@ -60,7 +60,7 @@ jobs:
         run: |
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
-            --targets "Key=instanceids,Values=i-REPLACE_WITH_YOUR_INSTANCE_ID" \
+            --targets "Key=instanceids,Values=i-i-0866af5dccc1bf743" \
             --comment "Deploy KetoCalculator" \
             --parameters 'commands=[
               "cd /home/ec2-user/KetoCalculator",
