@@ -246,6 +246,8 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forecastUnit, setForecastUnit] = useState("weeks");
+  const [forecastMaxPoints, setForecastMaxPoints] = useState("");
   const [isNarrow, setIsNarrow] = useState(
     typeof window !== "undefined" ? window.innerWidth < 1040 : false
   );
@@ -321,14 +323,38 @@ export default function App() {
     }
   }
 
+  const forecastConfig = useMemo(() => {
+    const config = {
+      weeks: { label: "Weeks", unit: "Week", count: 48, stepDays: 7, decimals: 0 },
+      months: { label: "Months", unit: "Month", count: 12, stepDays: 365 / 12, decimals: 0 },
+      days: { label: "Days", unit: "Day", count: 365, stepDays: 1, decimals: 0 },
+    };
+    return config[forecastUnit] ?? config.weeks;
+  }, [forecastUnit]);
+
   const chartData = useMemo(() => {
-    return (
-      result?.forecast?.map((p) => ({
-        week: p.week,
-        weight: p.weight_kg,
-      })) ?? []
-    );
-  }, [result]);
+    if (!result?.macros || typeof result.tdee !== "number") {
+      return [];
+    }
+
+    const parsedMax = Number(forecastMaxPoints);
+    const maxPoints =
+      Number.isFinite(parsedMax) && parsedMax >= 1
+        ? Math.floor(parsedMax)
+        : forecastConfig.count;
+    const startWeight = result?.forecast?.[0]?.weight_kg ?? 0;
+    const dailyDelta = (result.macros.calories_total - result.tdee) / 7700;
+    const data = [];
+
+    for (let i = 0; i <= maxPoints; i += 1) {
+      const weight = Math.max(0, startWeight + dailyDelta * (i * forecastConfig.stepDays));
+      data.push({ x: i, weight });
+    }
+
+    return data;
+  }, [result, forecastConfig, forecastMaxPoints]);
+
+  const formatForecastTick = (value) => Number(value).toFixed(forecastConfig.decimals);
 
   useEffect(() => {
     const handler = () => setIsNarrow(window.innerWidth < 1040);
@@ -620,15 +646,47 @@ export default function App() {
             <Card title="Weight forecast" subtitle="Weekly projection based on your calorie target.">
               {result && chartData.length > 0 ? (
                 <>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      flexWrap: "wrap",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <div style={{ fontSize: 13, color: colors.textMuted }}>X-axis settings</div>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <select
+                        value={forecastUnit}
+                        onChange={(e) => setForecastUnit(e.target.value)}
+                        style={{ ...inputStyle, height: 36, maxWidth: 160 }}
+                      >
+                        <option value="weeks">Weeks</option>
+                        <option value="months">Months</option>
+                        <option value="days">Days</option>
+                      </select>
+                      <input
+                        type="number"
+                        min={1}
+                        placeholder={`${forecastConfig.count}`}
+                        value={forecastMaxPoints}
+                        onChange={(e) => setForecastMaxPoints(e.target.value)}
+                        style={{ ...inputStyle, height: 36, maxWidth: 160 }}
+                      />
+                    </div>
+                  </div>
                   <div style={{ width: "100%", height: 280 }}>
                     <ResponsiveContainer>
                       <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                         <XAxis
-                          dataKey="week"
+                          dataKey="x"
+                          tickFormatter={formatForecastTick}
                           tick={{ fill: colors.textMuted, fontSize: 12 }}
                           label={{
-                            value: "Weeks",
+                            value: forecastConfig.label,
                             position: "insideBottom",
                             offset: -5,
                             fill: colors.textMuted,
@@ -636,6 +694,7 @@ export default function App() {
                         />
                         <YAxis
                           domain={["auto", "auto"]}
+                          tickFormatter={(value) => Number(value).toFixed(1)}
                           tick={{ fill: colors.textMuted, fontSize: 12 }}
                           label={{
                             value: "Weight (kg)",
@@ -645,6 +704,10 @@ export default function App() {
                           }}
                         />
                         <Tooltip
+                          labelFormatter={(label) =>
+                            `${forecastConfig.unit} ${formatForecastTick(label)}`
+                          }
+                          formatter={(value) => `${Number(value).toFixed(1)} kg`}
                           contentStyle={{
                             background: "rgba(15,23,42,0.9)",
                             border: `1px solid ${colors.border}`,
