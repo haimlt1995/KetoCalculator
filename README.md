@@ -90,7 +90,7 @@ KetoCalculator/
 ```bash
 # from repo root
 cp .env.example .env   # if you have one; otherwise create .env (see env section)
-docker compose up --build
+docker compose -f docker-compose-dev.yml up --build
 ```
 
 - Backend: `http://localhost:8000`
