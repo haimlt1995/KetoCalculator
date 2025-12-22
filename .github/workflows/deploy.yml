@@ -1,0 +1,71 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test_build_deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      AWS_REGION: eu-central-1
+      AWS_ACCOUNT_ID: "874043936756"
+      ECR_BACKEND_REPO: "keto-backend"
+      ECR_FRONTEND_REPO: "keto-frontend"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1) Configure AWS creds via OIDC (no stored AWS keys)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::874043936756:role/YOUR_GITHUB_OIDC_ROLE_NAME
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 2) Login to ECR
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+        # Official action for ECR login :contentReference[oaicite:10]{index=10}
+
+      # 3) Backend tests (uv/pytest/ruff) - optional but recommended
+      - name: Backend - install deps and run tests
+        working-directory: backend
+        run: |
+          pip install uv
+          uv sync
+          uv run ruff format --check .
+          uv run ruff check .
+          uv run pytest -q
+
+      # 4) Build & push backend image
+      - name: Build and push backend
+        run: |
+          docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_BACKEND_REPO:latest ./backend
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_BACKEND_REPO:latest
+
+      # 5) Build & push frontend image
+      - name: Build and push frontend
+        run: |
+          docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_FRONTEND_REPO:latest ./frontend
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_FRONTEND_REPO:latest
+
+      # 6) Deploy on EC2 via SSM RunCommand (no SSH)
+      - name: Deploy on EC2 via SSM
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=instanceids,Values=i-REPLACE_WITH_YOUR_INSTANCE_ID" \
+            --comment "Deploy KetoCalculator" \
+            --parameters 'commands=[
+              "cd /home/ec2-user/KetoCalculator",
+              "docker compose pull",
+              "docker compose up -d",
+              "docker image prune -f"
+            ]' \
+            --region $AWS_REGION
