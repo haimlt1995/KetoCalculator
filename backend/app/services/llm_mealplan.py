@@ -144,11 +144,21 @@ def generate_meal_plan(user: UserInput, calc: CalcOutput) -> MealPlanResponse:
             try:
                 data = json.loads(json_text)
             except json.JSONDecodeError as e:
-                preview = (text or "")[:600].replace("\n", "\\n")
-                raise RuntimeError(
-                    f"LLM returned non-JSON: {e.msg} at line {e.lineno} col {e.colno}. "
-                    f"Preview: {preview}"
-                ) from e
+                repaired = _repair_json(client, text)
+                if repaired:
+                    try:
+                        data = json.loads(repaired)
+                    except json.JSONDecodeError:
+                        data = None
+                else:
+                    data = None
+
+                if data is None:
+                    preview = (text or "")[:600].replace("\n", "\\n")
+                    raise RuntimeError(
+                        f"LLM returned non-JSON: {e.msg} at line {e.lineno} col {e.colno}. "
+                        f"Preview: {preview}"
+                    ) from e
             try:
                 return MealPlanResponse.model_validate(data)
             except Exception as e:
@@ -195,3 +205,29 @@ def _extract_json(text: str) -> str:
         return t[start : end + 1]
 
     return t
+
+
+def _repair_json(client: genai.Client, raw_text: str) -> str | None:
+    prompt = "\n".join(
+        [
+            "Fix the JSON below so it is valid and matches the schema.",
+            "Return JSON only. No markdown, no extra text.",
+            "JSON to fix:",
+            raw_text,
+        ]
+    )
+    try:
+        resp = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=MealPlanResponse.model_json_schema(),
+                max_output_tokens=1000,
+            ),
+        )
+    except Exception:
+        return None
+
+    text = resp.text or ""
+    return _extract_json(text) or None
