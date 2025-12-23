@@ -99,7 +99,7 @@ cp .env.example .env   # if you have one; otherwise create .env (see env section
 docker compose -f docker-compose-dev.yml up --build
 ```
 
-- Backend: `http://localhost:8000`
+- Backend: `http://localhost:8080`
 - Frontend: `http://localhost:5173`
 - Compose reads the root `.env` and passes `GEMINI_API_KEY` to the backend container.
 
