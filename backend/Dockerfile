@@ -1,31 +1,30 @@
 # syntax=docker/dockerfile:1
 
+FROM public.ecr.aws/lambda/python:3.12
+
+# Web adapter extension (keep this)
 FROM public.ecr.aws/awsguru/aws-lambda-adapter:0.8.4 AS lwa
 
-FROM python:3.12-slim
+# Final image
+FROM public.ecr.aws/lambda/python:3.12
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PORT=8080 \
-    VIRTUAL_ENV=/opt/venv \
-    PATH="/opt/venv/bin:$PATH"
-
-WORKDIR /app
-
-# Install uv (build-time tool)
-RUN pip install --no-cache-dir uv
-
-# Lambda Web Adapter extension
+# Copy adapter into extensions
 COPY --from=lwa /lambda-adapter /opt/extensions/aws-lambda-adapter
 
-# Copy deps + code
-COPY pyproject.toml uv.lock* /app/
-COPY app /app/app
+# Install deps into Lambda task root
+# (Lambda base image uses /var/task for code)
+WORKDIR ${LAMBDA_TASK_ROOT}
 
-# Install into a venv in /opt (read-only is fine at runtime)
-RUN uv venv /opt/venv && uv sync --no-dev
+# Install uv only for build, then install deps to task root
+RUN pip install --no-cache-dir uv
 
-EXPOSE 8080
+COPY pyproject.toml uv.lock* ./
+RUN uv pip install --system --no-dev --frozen
 
-# Run uvicorn directly (NO uv at runtime)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+COPY app ./app
+
+
+ENV PORT=8080
+
+# Start uvicorn via Lambda base image entrypoint
+CMD ["app.main:app"]
