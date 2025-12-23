@@ -1,6 +1,4 @@
-# --------------------
 # Python
-# --------------------
 __pycache__/
 *.pyc
 *.pyo
@@ -9,50 +7,42 @@ __pycache__/
 # Virtual environments
 .venv/
 
-# Packaging / build artifacts
+# Build artifacts
 *.egg-info/
 dist/
 build/
 
-# Test / lint caches
+# Test caches
 .pytest_cache/
 .ruff-cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
 
-# --------------------
-# Environment secrets
-# --------------------
+# Environment
 .env
 .env.*
+!.env.example
 
-# --------------------
-# Docker
-# --------------------
-# (usually nothing generated, but just in case)
+# Docker logs
 *.log
 
-# --------------------
 # OS / Editor
-# --------------------
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+*Zone.Identifier*
 
-# --------------------
-# Frontend (Vite – future)
-# --------------------
+# Frontend
 node_modules/
 dist/
 
-#aws
+# AWS tools
 aws
 awscliv2.zip
+
 # Frontend local tooling
 frontend/aws/
 frontend/awscliv2.zip
-
-
-# ignore temp files
-reading
-starting
-=
