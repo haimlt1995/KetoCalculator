@@ -1,4 +1,8 @@
 # syntax=docker/dockerfile:1
+
+# Get the Lambda Web Adapter binary from public ECR (stable source)
+FROM public.ecr.aws/awsguru/aws-lambda-adapter:0.8.4 AS lwa
+
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -9,10 +13,8 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir uv
 
-# Lambda Web Adapter (as a Lambda extension)
-ADD https://github.com/awslabs/aws-lambda-web-adapter/releases/latest/download/aws-lambda-web-adapter \
-  /opt/extensions/aws-lambda-web-adapter
-RUN chmod +x /opt/extensions/aws-lambda-web-adapter
+# Copy adapter into Lambda extensions folder
+COPY --from=lwa /lambda-adapter /opt/extensions/lambda-adapter
 
 COPY pyproject.toml uv.lock* /app/
 COPY app /app/app
