@@ -14,7 +14,11 @@ WORKDIR /var/task
 
 # Install runtime deps
 COPY requirements.runtime.txt ./
-RUN pip install --no-cache-dir -r requirements.runtime.txt
+RUN sed -i '/^file:\/\//d' requirements.runtime.txt \
+ && sed -i '/^-e /d' requirements.runtime.txt \
+ && sed -i '/^\.$/d' requirements.runtime.txt \
+ && pip install --no-cache-dir -r requirements.runtime.txt
+
 
 # Copy your app
 COPY app ./app
