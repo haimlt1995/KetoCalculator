@@ -8,16 +8,14 @@ COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.4 /lambda-adapter /opt
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8000 \
-    AWS_LWA_READINESS_CHECK_PROTOCOL=tcp
+    AWS_LWA_READINESS_CHECK_PROTOCOL=tcp \
+    AWS_LWA_READINESS_CHECK_PATH=/health
 
 WORKDIR /var/task
 
 # Install runtime deps
 COPY requirements.runtime.txt ./
-RUN sed -i '/^file:\/\//d' requirements.runtime.txt \
- && sed -i '/^-e /d' requirements.runtime.txt \
- && sed -i '/^\.$/d' requirements.runtime.txt \
- && pip install --no-cache-dir -r requirements.runtime.txt
+RUN pip install --no-cache-dir -r requirements.runtime.txt
 
 
 # Copy your app
