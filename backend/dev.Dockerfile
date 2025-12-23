@@ -1,22 +1,19 @@
 # syntax=docker/dockerfile:1
+
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PORT=8080
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
 RUN pip install --no-cache-dir uv
 
-# Lambda Web Adapter (as a Lambda extension)
-ADD https://github.com/awslabs/aws-lambda-web-adapter/releases/latest/download/aws-lambda-web-adapter \
-  /opt/extensions/aws-lambda-web-adapter
-RUN chmod +x /opt/extensions/aws-lambda-web-adapter
-
+# Copy project metadata AND source code before syncing
 COPY pyproject.toml uv.lock* /app/
 COPY app /app/app
 
+# Install dependencies (no dev deps)
 RUN uv sync --no-dev
 
 EXPOSE 8080

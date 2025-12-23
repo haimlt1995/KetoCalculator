@@ -8,7 +8,7 @@ export default defineConfig({
     allowedHosts: ["all", "d2xlvapgg8htpu.cloudfront.net"],         // fixes CloudFront "Blocked request"
     proxy: {
       "/api": {
-        target: "http://backend:8000", // backend service name on docker network
+        target: "http://backend:8080", // backend service name on docker network
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },

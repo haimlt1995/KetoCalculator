@@ -6,7 +6,7 @@ services:
     expose:
       - "8000"          
     ports:
-      - "8000:8000"     
+      - "8000:8080"     
 
   frontend:
     image: 874043936756.dkr.ecr.eu-central-1.amazonaws.com/keto-frontend:latest
