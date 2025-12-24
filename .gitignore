@@ -46,3 +46,6 @@ awscliv2.zip
 # Frontend local tooling
 frontend/aws/
 frontend/awscliv2.zip
+
+docker-compose.yml
+
